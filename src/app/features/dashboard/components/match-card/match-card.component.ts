@@ -1,6 +1,7 @@
-import { Component, input, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatchTrend } from '../../../../core/services/matches.store';
 import { OddsSelection } from '../../../../core/models/match.model';
+import { BetSlipStore } from '../../../../core/services/bet-slip.store';
 import { OddsButtonComponent } from '../odds-button/odds-button.component';
 
 @Component({
@@ -9,7 +10,7 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
   imports: [OddsButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="match-card">
+    <article class="match-card" [attr.aria-label]="match().homeTeam + ' vs ' + match().awayTeam">
       <div class="header">
         <span class="sport">{{ match().sport }}</span>
         @if (match().status === 'live') {
@@ -18,7 +19,7 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
           </span>
         }
       </div>
-      
+
       <div class="teams">
         <div class="team">
           <span class="name">{{ match().homeTeam }}</span>
@@ -33,7 +34,7 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
 
       @if (match().sport === 'tennis' && match().tennisScore) {
         <div class="tennis-sets">
-          Sets: {{ match().tennisScore?.setsWon?.home }} - {{ match().tennisScore?.setsWon?.away }}
+          <span>Sets: {{ match().tennisScore?.setsWon?.home }} - {{ match().tennisScore?.setsWon?.away }}</span>
           <div class="set-history">
             @for (set of sets(); track $index) {
               <span class="set-score">{{ set.home }}-{{ set.away }}</span>
@@ -44,21 +45,30 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
 
       <div class="odds-grid">
         @for (odd of oddsList(); track odd.selection) {
-          <app-odds-button [value]="odd.value" [trend]="odd.trend" />
+          <app-odds-button
+            [value]="odd.value"
+            [trend]="odd.trend"
+            [selection]="odd.selection"
+            [selected]="odd.selected"
+            (picked)="onPick(odd.selection)"
+          />
         }
       </div>
-    </div>
+    </article>
   `,
   styles: [`
     .match-card {
-      background: #fff;
-      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      border: 1px solid #eee;
-      margin-bottom: 16px;
-      transition: transform 0.2s ease;
-      &:hover { transform: translateY(-2px); }
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
     }
 
     .header {
@@ -66,10 +76,11 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
+
       .sport {
         font-size: 12px;
         text-transform: uppercase;
-        color: #888;
+        color: var(--text-muted);
         font-weight: 600;
       }
     }
@@ -80,11 +91,12 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
       gap: 6px;
       font-size: 12px;
       font-weight: 700;
-      color: #ef4444;
+      color: var(--live);
+
       .pulse {
         width: 8px;
         height: 8px;
-        background: #ef4444;
+        background: var(--live);
         border-radius: 50%;
         animation: pulse-animation 1.5s infinite;
       }
@@ -95,21 +107,30 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
+
       .team {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 4px;
-        .name { font-weight: 600; font-size: 16px; }
-        .score { 
-          font-size: 24px; 
-          font-weight: 800; 
-          color: #111; 
+        flex: 1;
+
+        .name {
+          font-weight: 600;
+          font-size: 16px;
+          text-align: center;
+        }
+
+        .score {
+          font-size: 24px;
+          font-weight: 800;
+          color: var(--text);
         }
       }
+
       .vs {
         font-size: 12px;
-        color: #aaa;
+        color: var(--text-muted);
         font-weight: 700;
       }
     }
@@ -121,17 +142,23 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
     }
 
     .tennis-sets {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
       text-align: center;
       font-size: 12px;
-      color: #666;
+      color: var(--text-muted);
       margin-bottom: 12px;
+
       .set-history {
         display: flex;
-        justify-content: center;
-        gap: 8px;
-        margin-top: 4px;
+        gap: 6px;
+
         .set-score {
-          background: #eee;
+          background: var(--surface-alt);
+          border: 1px solid var(--border);
           padding: 2px 6px;
           border-radius: 4px;
           font-size: 10px;
@@ -140,14 +167,16 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
     }
 
     @keyframes pulse-animation {
-      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent); }
+      70% { box-shadow: 0 0 0 10px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
     }
   `]
 })
 export class MatchCardComponent {
   match = input.required<MatchTrend>();
+
+  private readonly betSlipStore = inject(BetSlipStore);
 
   protected readonly homeScore = computed(() => {
     const m = this.match();
@@ -168,7 +197,23 @@ export class MatchCardComponent {
     return (['1', 'X', '2'] as const).map(selection => ({
       selection,
       value: m.odds[selection as OddsSelection] ?? 'N/A',
-      trend: m.trends[selection] ?? { direction: 'neutral', timestamp: 0 }
+      trend: m.trends[selection] ?? { direction: 'neutral', timestamp: 0 },
+      selected: this.betSlipStore.hasSelection(m.id, selection)
     }));
   });
+
+  protected onPick(selection: OddsSelection) {
+    const m = this.match();
+    const odds = m.odds[selection as OddsSelection];
+    if (!odds) return;
+
+    const stake = 10;
+    this.betSlipStore.toggleSelection({
+      matchId: m.id,
+      selection,
+      odds,
+      stake,
+      potentialPayout: Number((stake * odds).toFixed(2))
+    });
+  }
 }

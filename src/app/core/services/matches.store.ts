@@ -15,6 +15,8 @@ export interface MatchTrend extends Match {
 export class MatchesStore {
   private readonly liveEventService = inject(LiveEventService);
 
+  public readonly loading = signal(true);
+
   private readonly _matchesMap = signal<Record<string, MatchTrend>>(
     SEED_MATCHES.reduce((acc, m) => ({ 
       ...acc, 
@@ -34,6 +36,10 @@ export class MatchesStore {
 
   constructor() {
     this.liveEventService.events$.subscribe(event => this.updateFromEvent(event));
+
+    setTimeout(() => {
+      this.loading.set(false);
+    }, 900);
   }
 
   private updateFromEvent(event: LiveEvent) {

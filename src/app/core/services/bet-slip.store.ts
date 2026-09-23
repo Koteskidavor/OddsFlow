@@ -1,10 +1,13 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { BetSlipItem } from '../models/bet-slip.model';
 
+export function slipKey(matchId: string, selection: string): string {
+  return `${matchId}::${selection}`;
+}
+
 @Injectable({
   providedIn: 'root'
 })
-
 export class BetSlipStore {
   private readonly _items = signal<Record<string, BetSlipItem>>({});
   public readonly items = computed(() => Object.values(this._items()));
@@ -17,29 +20,41 @@ export class BetSlipStore {
     this.items().reduce((sum, item) => sum + item.potentialPayout, 0)
   );
 
+  public readonly hasSelection = (matchId: string, selection: string) =>
+    this._items()[slipKey(matchId, selection)] !== undefined;
+
   addSelection(item: BetSlipItem) {
     this._items.update(items => ({
       ...items,
-      [item.matchId]: item
+      [slipKey(item.matchId, item.selection)]: item
     }));
   }
 
-  removeSelection(matchId: string) {
+  removeSelection(matchId: string, selection: string) {
     this._items.update(items => {
       const newItems = { ...items };
-      delete newItems[matchId];
+      delete newItems[slipKey(matchId, selection)];
       return newItems;
     });
   }
 
-  updateStake(matchId: string, stake: number) {
+  toggleSelection(item: BetSlipItem) {
+    if (this.hasSelection(item.matchId, item.selection)) {
+      this.removeSelection(item.matchId, item.selection);
+    } else {
+      this.addSelection(item);
+    }
+  }
+
+  updateStake(matchId: string, selection: string, stake: number) {
     this._items.update(items => {
-      const item = items[matchId];
+      const key = slipKey(matchId, selection);
+      const item = items[key];
       if (!item) return items;
 
       return {
         ...items,
-        [matchId]: {
+        [key]: {
           ...item,
           stake,
           potentialPayout: Number((stake * item.odds).toFixed(2))

@@ -83,4 +83,3 @@ export const SEED_MATCHES: Match[] = [
     odds: { '1': 1.6, 'X': 0, '2': 2.2, 'over': 2.5, 'under': 2.5, 'home': 1.6, 'away': 2.2 }
   }
 ];
-console.table(SEED_MATCHES);
