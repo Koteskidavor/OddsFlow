@@ -46,7 +46,7 @@ export const SEED_MATCHES: Match[] = [
     homeTeam: 'Novak Djokovic',
     awayTeam: 'Carlos Alcaraz',
     startTime: new Date(),
-    score: '1-0',
+    score: '2-1',
     tennisScore: {
       sets: [{ home: 6, away: 4 }],
       currentSet: { home: '30', away: '15' },

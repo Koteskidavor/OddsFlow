@@ -31,10 +31,10 @@ export class LiveEventService {
       event = {
         type: 'ODDS_UPDATE',
         matchId: match.id,
-        selection: '1',
+        selection: ['1', 'X', '2'][Math.floor(Math.random() * 3)],
         newOdds: parseFloat((Math.random() * 5 + 1).toFixed(2))
       };
-    } else if (rand < 0.9) {
+    } else if (rand < 0.94) {
       if (match.sport === 'tennis') {
         // Specialized Tennis Scoring Logic
         const tennisPoints = ['0', '15', '30', '40'];

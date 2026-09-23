@@ -1,12 +1,12 @@
-import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, input, computed, ChangeDetectionStrategy } from '@angular/core';
 import { MatchTrend } from '../../../../core/services/matches.store';
 import { OddsSelection } from '../../../../core/models/match.model';
+import { OddsButtonComponent } from '../odds-button/odds-button.component';
 
 @Component({
   selector: 'app-match-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [OddsButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="match-card">
@@ -22,20 +22,12 @@ import { OddsSelection } from '../../../../core/models/match.model';
       <div class="teams">
         <div class="team">
           <span class="name">{{ match().homeTeam }}</span>
-          @if (match().sport === 'tennis') {
-            <span class="score">{{ match().tennisScore?.currentSet?.home || '0' }}</span>
-          } @else if (match().score) {
-            <span class="score">{{ getScorePart(0) }}</span>
-          }
+          <span class="score">{{ homeScore() }}</span>
         </div>
         <div class="vs">VS</div>
         <div class="team">
           <span class="name">{{ match().awayTeam }}</span>
-          @if (match().sport === 'tennis') {
-            <span class="score">{{ match().tennisScore?.currentSet?.away || '0' }}</span>
-          } @else if (match().score) {
-            <span class="score">{{ getScorePart(1) }}</span>
-          }
+          <span class="score">{{ awayScore() }}</span>
         </div>
       </div>
 
@@ -43,7 +35,7 @@ import { OddsSelection } from '../../../../core/models/match.model';
         <div class="tennis-sets">
           Sets: {{ match().tennisScore?.setsWon?.home }} - {{ match().tennisScore?.setsWon?.away }}
           <div class="set-history">
-            @for (set of match().tennisScore?.sets; track $index) {
+            @for (set of sets(); track $index) {
               <span class="set-score">{{ set.home }}-{{ set.away }}</span>
             }
           </div>
@@ -51,13 +43,8 @@ import { OddsSelection } from '../../../../core/models/match.model';
       }
 
       <div class="odds-grid">
-        @for (selection of ['1', 'X', '2']; track selection) {
-          <div class="odds-item">
-            <span class="label">{{ selection }}</span>
-            <span class="value" [class]="match().trends[selection] || 'neutral'">
-              {{ getOddValue(selection) }}
-            </span>
-          </div>
+        @for (odd of oddsList(); track odd.selection) {
+          <app-odds-button [value]="odd.value" [trend]="odd.trend" />
         }
       </div>
     </div>
@@ -131,22 +118,6 @@ import { OddsSelection } from '../../../../core/models/match.model';
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
-      .odds-item {
-        background: #f8f9fa;
-        padding: 8px;
-        border-radius: 6px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        .label { font-size: 11px; color: #666; margin-bottom: 4px; }
-        .value { 
-          font-weight: 700; 
-          font-size: 14px;
-          &.up { color: #10b981; }
-          &.down { color: #ef4444; }
-          &.neutral { color: #333; }
-        }
-      }
     }
 
     .tennis-sets {
@@ -178,11 +149,26 @@ import { OddsSelection } from '../../../../core/models/match.model';
 export class MatchCardComponent {
   match = input.required<MatchTrend>();
 
-  getScorePart(index: number): string {
-    return this.match().score?.split('-')[index] || '0';
-  }
+  protected readonly homeScore = computed(() => {
+    const m = this.match();
+    if (m.sport === 'tennis') return m.tennisScore?.currentSet?.home || '0';
+    return m.score?.split('-')[0] || '0';
+  });
 
-  getOddValue(selection: string): string | number {
-    return this.match().odds[selection as OddsSelection] || 'N/A';
-  }
+  protected readonly awayScore = computed(() => {
+    const m = this.match();
+    if (m.sport === 'tennis') return m.tennisScore?.currentSet?.away || '0';
+    return m.score?.split('-')[1] || '0';
+  });
+
+  protected readonly sets = computed(() => this.match().tennisScore?.sets ?? []);
+
+  protected readonly oddsList = computed(() => {
+    const m = this.match();
+    return (['1', 'X', '2'] as const).map(selection => ({
+      selection,
+      value: m.odds[selection as OddsSelection] ?? 'N/A',
+      trend: m.trends[selection] ?? { direction: 'neutral', timestamp: 0 }
+    }));
+  });
 }

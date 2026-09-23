@@ -1,11 +1,12 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Match, SportType } from '../models/match.model';
+import { Match, SportType, MatchStatus } from '../models/match.model';
 import { LiveEvent } from '../models/live-event.model';
+import { TrendInfo } from '../models/odds-trend.model';
 import { SEED_MATCHES } from '../data/seed-matches';
 import { LiveEventService } from './live-event.service';
 
 export interface MatchTrend extends Match {
-  trends: Record<string, 'up' | 'down' | 'neutral'>;
+  trends: Record<string, TrendInfo>;
 }
 
 @Injectable({
@@ -15,9 +16,9 @@ export class MatchesStore {
   private readonly liveEventService = inject(LiveEventService);
 
   private readonly _matchesMap = signal<Record<string, MatchTrend>>(
-    SEED_MATCHES.reduce((acc, m) => ({
-      ...acc,
-      [m.id]: { ...m, trends: {} }
+    SEED_MATCHES.reduce((acc, m) => ({ 
+      ...acc, 
+      [m.id]: { ...m, trends: {} } 
     }), {} as Record<string, MatchTrend>)
   );
 
@@ -42,18 +43,23 @@ export class MatchesStore {
 
       let updatedMatch: MatchTrend;
 
-      switch (event.type) {
+switch (event.type) {
         case 'ODDS_UPDATE':
+          if (match.status !== 'live') return map;
           const currentOdds = match.odds[event.selection as keyof typeof match.odds] || 0;
-          const trend = event.newOdds > currentOdds ? 'up' : event.newOdds < currentOdds ? 'down' : 'neutral';
+          const direction = event.newOdds > currentOdds ? 'up' : event.newOdds < currentOdds ? 'down' : 'neutral';
           updatedMatch = {
             ...match,
             odds: { ...match.odds, [event.selection]: event.newOdds },
-            trends: { ...match.trends, [event.selection]: trend }
+            trends: {
+              ...match.trends,
+              [event.selection]: { direction, timestamp: Date.now() }
+            }
           };
           break;
 
         case 'SCORE_UPDATE':
+          if (match.status !== 'live') return map;
           if (match.sport === 'tennis') {
             const update = (event as any).tennisUpdate;
             if (!update) return map;
@@ -83,7 +89,8 @@ export class MatchesStore {
           }
           break;
         case 'STATUS_CHANGE':
-          updatedMatch = { ...match, status: event.newStatus as any };
+          if (match.status === 'finished' || event.newStatus === match.status) return map;
+          updatedMatch = { ...match, status: event.newStatus as MatchStatus };
           break;
         default:
           return map;
