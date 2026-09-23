@@ -43,10 +43,15 @@ export const SEED_MATCHES: Match[] = [
     id: 'm5',
     sport: 'tennis',
     status: 'live',
-    homeTeam: 'Carlos Alcaraz',
-    awayTeam: 'Novak Djokovic',
+    homeTeam: 'Novak Djokovic',
+    awayTeam: 'Carlos Alcaraz',
     startTime: new Date(),
-    score: '6-4, 3-2',
+    score: '1-0',
+    tennisScore: {
+      sets: [{ home: 6, away: 4 }],
+      currentSet: { home: '30', away: '15' },
+      setsWon: { home: 1, away: 0 }
+    },
     odds: { '1': 1.8, 'X': 0, '2': 2.0, 'over': 3.5, 'under': 3.5, 'home': 1.8, 'away': 2.0 }
   },
   {
