@@ -18,6 +18,7 @@ import { SportType } from '../../core/models/match.model';
         @for (sport of sports; track sport) {
           <button
             class="tab-btn"
+            [attr.data-cy]="'sport-tab-' + sport"
             [class.active]="activeSport() === sport"
             (click)="setActiveSport(sport)"
           >

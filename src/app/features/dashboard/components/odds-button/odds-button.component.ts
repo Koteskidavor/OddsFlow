@@ -10,6 +10,7 @@ import { OddsSelection } from '../../../../core/models/match.model';
     <button
       type="button"
       class="odds-btn"
+      data-cy="odds-button"
       [class.is-selected]="selected()"
       [attr.aria-pressed]="selected()"
       [attr.aria-label]="'Select ' + selection() + ' at ' + value()"

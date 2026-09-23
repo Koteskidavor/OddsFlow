@@ -39,7 +39,14 @@ export class MatchesStore {
 
     setTimeout(() => {
       this.loading.set(false);
-    }, 900);
+    }, this.resolveLoadDelay());
+  }
+
+  private resolveLoadDelay(): number {
+    if (typeof window === 'undefined') return 900;
+    const parsed = Number(new URLSearchParams(window.location.search).get('loadMs'));
+    if (!Number.isFinite(parsed)) return 900;
+    return Math.min(10000, Math.max(0, parsed));
   }
 
   private updateFromEvent(event: LiveEvent) {

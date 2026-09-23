@@ -13,6 +13,12 @@ export class LiveEventService {
   public readonly events$: Observable<LiveEvent> = this._events.asObservable();
 
   constructor() {
+    const simulationPaused =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('sim=off');
+
+    if (simulationPaused) return;
+
     interval(2500)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.emitRandomEvent());

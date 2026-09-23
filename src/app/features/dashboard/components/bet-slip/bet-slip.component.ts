@@ -14,7 +14,7 @@ import { MatchesStore } from '../../../../core/services/matches.store';
         <div class="slot-title-row">
           <h2 class="slot-title">Bet Slip</h2>
           @if (items().length > 0) {
-            <span class="slot-count" aria-label="Total selections">{{ items().length }}</span>
+            <span class="slot-count" data-cy="slip-count" aria-label="Total selections">{{ items().length }}</span>
           }
         </div>
         <button class="slot-close" type="button" (click)="close.emit()" aria-label="Close bet slip">
@@ -26,7 +26,7 @@ import { MatchesStore } from '../../../../core/services/matches.store';
       </header>
 
       @if (items().length === 0) {
-        <div class="slot-empty">
+        <div class="slot-empty" data-cy="slip-empty">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 7h16l-1.5 12a2 2 0 0 1-2 1.8h-9a2 2 0 0 1-2-1.8L4 7z"></path>
             <path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
@@ -35,13 +35,14 @@ import { MatchesStore } from '../../../../core/services/matches.store';
           <p class="slot-empty-hint">Tap an odds button on any match to add it here.</p>
         </div>
       } @else {
-        <ul class="slot-list" aria-label="Selections">
+        <ul class="slot-list" data-cy="slip-list" aria-label="Selections">
           @for (row of rows(); track row.key) {
-            <li class="slot-row">
+            <li class="slot-row" data-cy="slip-row">
               <div class="slot-row-top">
-                <span class="slot-teams">{{ row.home }} vs {{ row.away }}</span>
+                <span class="slot-teams" data-cy="slip-teams">{{ row.home }} vs {{ row.away }}</span>
                 <button
                   class="slot-remove"
+                  data-cy="slip-remove"
                   type="button"
                   [attr.aria-label]="'Remove ' + row.home + ' vs ' + row.away + ' ' + row.selection"
                   (click)="remove(row.matchId, row.selection)"
@@ -55,13 +56,14 @@ import { MatchesStore } from '../../../../core/services/matches.store';
               </div>
               <div class="slot-row-meta">
                 <span class="slot-selection">Selection {{ row.selection }}</span>
-                <span class="slot-odds">{{ row.odds | currency: 'EUR' : 'symbol' : '1.2-3' }}</span>
+                <span class="slot-odds" data-cy="slip-odds">{{ row.odds | currency: 'EUR' : 'symbol' : '1.2-3' }}</span>
               </div>
               <div class="slot-row-inputs">
                 <label class="slot-stake">
                   <span class="slot-stake-label">Stake</span>
                   <input
                     class="slot-stake-input"
+                    data-cy="slip-stake-input"
                     type="number"
                     min="0"
                     step="0.5"
@@ -69,7 +71,7 @@ import { MatchesStore } from '../../../../core/services/matches.store';
                     (change)="updateStake(row.matchId, row.selection, $event)"
                   />
                 </label>
-                <span class="slot-payout">
+                <span class="slot-payout" data-cy="slip-row-payout">
                   Potential payout
                   <strong>{{ row.potentialPayout | currency: 'EUR' : 'symbol' : '1.2' }}</strong>
                 </span>
@@ -82,14 +84,14 @@ import { MatchesStore } from '../../../../core/services/matches.store';
           <div class="slot-totals">
             <div class="slot-total-row">
               <span>Total stake</span>
-              <span>{{ totalStake() | currency: 'EUR' : 'symbol' : '1.2' }}</span>
+              <span data-cy="slip-total-stake">{{ totalStake() | currency: 'EUR' : 'symbol' : '1.2' }}</span>
             </div>
             <div class="slot-total-row slot-total-payout">
               <span>Potential payout</span>
-              <span>{{ totalPayout() | currency: 'EUR' : 'symbol' : '1.2' }}</span>
+              <span data-cy="slip-total-payout">{{ totalPayout() | currency: 'EUR' : 'symbol' : '1.2' }}</span>
             </div>
           </div>
-          <button class="slot-place" type="button" (click)="placeBet()">Place Bet</button>
+          <button class="slot-place" data-cy="slip-place" type="button" (click)="placeBet()">Place Bet</button>
         </footer>
       }
     </div>

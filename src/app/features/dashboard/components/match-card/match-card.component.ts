@@ -10,7 +10,7 @@ import { OddsButtonComponent } from '../odds-button/odds-button.component';
   imports: [OddsButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="match-card" [attr.aria-label]="match().homeTeam + ' vs ' + match().awayTeam">
+    <article class="match-card" data-cy="match-card" [attr.aria-label]="match().homeTeam + ' vs ' + match().awayTeam">
       <div class="header">
         <span class="sport">{{ match().sport }}</span>
         @if (match().status === 'live') {
