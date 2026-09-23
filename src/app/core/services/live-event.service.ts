@@ -1,17 +1,21 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, DestroyRef } from '@angular/core';
 import { interval, Observable, Subject } from 'rxjs';
-import { LiveEvent, LiveEventType } from '../models/live-event.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { LiveEvent } from '../models/live-event.model';
 import { SEED_MATCHES } from '../data/seed-matches';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LiveEventService {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly _events = new Subject<LiveEvent>();
   public readonly events$: Observable<LiveEvent> = this._events.asObservable();
 
   constructor() {
-    interval(2500).subscribe(() => this.emitRandomEvent());
+    interval(2500)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.emitRandomEvent());
   }
 
   private emitRandomEvent() {
@@ -49,3 +53,4 @@ export class LiveEventService {
     this._events.next(event);
   }
 }
+
