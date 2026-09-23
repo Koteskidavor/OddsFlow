@@ -38,10 +38,16 @@ This will compile your project and store the build artifacts in the `dist/` dire
 
 ## Running unit tests
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+To execute unit tests with the [Jasmine](https://jasmine.github.io/) framework on the Karma runner, use the following command:
 
 ```bash
 ng test
+```
+
+For a single headless run (CI-friendly), use:
+
+```bash
+npm run test:ci
 ```
 
 ## Running end-to-end tests

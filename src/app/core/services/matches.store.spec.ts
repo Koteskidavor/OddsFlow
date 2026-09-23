@@ -19,16 +19,11 @@ describe('MatchesStore', () => {
   let events: FakeLiveEventService;
 
   beforeEach(() => {
-    vi.useFakeTimers();
     events = new FakeLiveEventService();
     TestBed.configureTestingModule({
       providers: [{ provide: LiveEventService, useValue: events }]
     });
     store = TestBed.inject(MatchesStore);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   function match(id: string): MatchTrend | undefined {
