@@ -205,7 +205,7 @@ export class MatchCardComponent {
   protected onPick(selection: OddsSelection) {
     const m = this.match();
     const odds = m.odds[selection as OddsSelection];
-    if (!odds) return;
+    if (!(odds > 0)) return;
 
     const stake = 10;
     this.betSlipStore.toggleSelection({

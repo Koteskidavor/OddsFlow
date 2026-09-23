@@ -24,6 +24,7 @@ export class BetSlipStore {
     this._items()[slipKey(matchId, selection)] !== undefined;
 
   addSelection(item: BetSlipItem) {
+    if (!(item.odds > 0)) return;
     this._items.update(items => ({
       ...items,
       [slipKey(item.matchId, item.selection)]: item

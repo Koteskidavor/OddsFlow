@@ -52,6 +52,7 @@ export class MatchesStore {
 switch (event.type) {
         case 'ODDS_UPDATE':
           if (match.status !== 'live') return map;
+          if (!(event.newOdds > 0)) return map;
           const currentOdds = match.odds[event.selection as keyof typeof match.odds] || 0;
           const direction = event.newOdds > currentOdds ? 'up' : event.newOdds < currentOdds ? 'down' : 'neutral';
           updatedMatch = {
