@@ -9,6 +9,8 @@ class FakeLiveEventService {
   readonly subject = new Subject<LiveEvent>();
   readonly events$ = this.subject.asObservable();
 
+  setMatchesSource(): void {}
+
   emit(event: LiveEvent) {
     this.subject.next(event);
   }
@@ -139,7 +141,7 @@ describe('MatchesStore', () => {
       expect(match('m7')!.score).toBe('1-1');
       expect(match('m1')!.score).toBe('2-1');
       expect(match('m3')!.score).toBe('88-92');
-      expect(match('m5')!.score).toBe('2-1');
+      expect(match('m5')!.score).toBe('1-0');
     });
   });
 
@@ -150,14 +152,14 @@ describe('MatchesStore', () => {
       expect(match('m1')!.score).toBe('3-1');
       expect(match('m2')!.score).toBeUndefined();
       expect(match('m3')!.score).toBe('88-92');
-      expect(match('m5')!.score).toBe('2-1');
+      expect(match('m5')!.score).toBe('1-0');
     });
 
     it('ignores plain SCORE_UPDATE for tennis matches', () => {
       events.emit({ type: 'SCORE_UPDATE', matchId: 'm5', homeScore: 9, awayScore: 9 });
 
       expect(match('m5')!.tennisScore?.currentSet).toEqual({ home: '30', away: '15' });
-      expect(match('m5')!.score).toBe('2-1');
+      expect(match('m5')!.score).toBe('1-0');
     });
   });
 

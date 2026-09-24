@@ -27,18 +27,20 @@ describe('Bet slip toggling & market validation', () => {
     cy.get('[data-cy="slip-remove"]').click();
     cy.get('[data-cy="slip-empty"]').should('be.visible');
 
-    // Basketball Draw is void (0) and must never add a selection.
+    // Basketball Draw is void: it renders as N/A and is not selectable.
     cy.get('[data-cy="sport-tab-basketball"]').click();
-    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).find('.value').should('have.text', '0');
-    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).click();
+    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).find('.value').should('have.text', 'N/A');
+    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).should('be.disabled');
+    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).click({ force: true });
     cy.get('[data-cy="slip-count"]').should('not.exist');
     cy.get('[data-cy="slip-empty"]').should('be.visible');
     cy.get('[data-cy="slip-total-stake"]').should('not.exist');
 
     // Tennis Draw is also void.
     cy.get('[data-cy="sport-tab-tennis"]').click();
-    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).find('.value').should('have.text', '0');
-    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).click();
+    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).find('.value').should('have.text', 'N/A');
+    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).should('be.disabled');
+    cy.get('[data-cy="match-card"]').eq(0).find('[data-cy="odds-button"]').eq(1).click({ force: true });
     cy.get('[data-cy="slip-count"]').should('not.exist');
     cy.get('[data-cy="slip-empty"]').should('be.visible');
   });

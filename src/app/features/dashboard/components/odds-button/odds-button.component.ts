@@ -12,10 +12,16 @@ export class OddsButtonComponent {
   trend = input.required<TrendInfo>();
   selection = input.required<OddsSelection>();
   selected = input(false);
+  disabled = input(false);
   picked = output<OddsSelection>();
 
   protected readonly flashState = computed(() => ({
     key: this.trend().timestamp,
     direction: this.trend().direction
   }));
+
+  protected pick(): void {
+    if (this.disabled()) return;
+    this.picked.emit(this.selection());
+  }
 }

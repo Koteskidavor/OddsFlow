@@ -1,8 +1,10 @@
 import { Component, input, computed, inject } from '@angular/core';
 import { MatchTrend } from '../../../../core/services/matches.store';
-import { OddsSelection } from '../../../../core/models/match.model';
-import { BetSlipStore } from '../../../../core/services/bet-slip.store';
+import { MatchStatus, OddsSelection } from '../../../../core/models/match.model';
+import { BetSlipStore, DEFAULT_STAKE_CENTS } from '../../../../core/services/bet-slip.store';
 import { OddsButtonComponent } from '../odds-button/odds-button.component';
+
+const BETTABLE_STATUSES = new Set<MatchStatus>(['live', 'scheduled']);
 
 @Component({
   selector: 'app-match-card',
@@ -31,26 +33,32 @@ export class MatchCardComponent {
 
   protected readonly oddsList = computed(() => {
     const m = this.match();
-    return (['1', 'X', '2'] as const).map(selection => ({
-      selection,
-      value: m.odds[selection] ?? 'N/A',
-      trend: m.trends[selection] ?? { direction: 'neutral', timestamp: 0 },
-      selected: this.betSlipStore.hasSelection(m.id, selection)
-    }));
+    return (['1', 'X', '2'] as const).map(selection => {
+      const odds = m.odds[selection];
+      const priced = typeof odds === 'number' && odds > 0;
+      return {
+        selection,
+        value: priced ? odds : 'N/A',
+        trend: m.trends[selection] ?? { direction: 'neutral', timestamp: 0 },
+        selected: this.betSlipStore.hasSelection(m.id, selection) && priced,
+        disabled: !BETTABLE_STATUSES.has(m.status) || !priced
+      };
+    });
   });
 
   protected onPick(selection: OddsSelection) {
     const m = this.match();
+    if (!BETTABLE_STATUSES.has(m.status)) return;
+
     const odds = m.odds[selection];
     if (!(odds > 0)) return;
 
-    const stake = 10;
     this.betSlipStore.toggleSelection({
       matchId: m.id,
       selection,
       odds,
-      stake,
-      potentialPayout: Number((stake * odds).toFixed(2))
+      stake: DEFAULT_STAKE_CENTS,
+      potentialPayout: Math.round(DEFAULT_STAKE_CENTS * odds)
     });
   }
 }

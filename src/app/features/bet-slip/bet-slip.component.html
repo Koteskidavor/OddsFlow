@@ -45,7 +45,7 @@
           </div>
           <div class="slot-row-meta">
             <span class="slot-selection">Selection {{ row.selection }}</span>
-            <span class="slot-odds" data-cy="slip-odds">{{ row.odds | currency: 'EUR' : 'symbol' : '1.2-3' }}</span>
+            <span class="slot-odds" data-cy="slip-odds">{{ row.odds | number: '1.2-3' }}</span>
           </div>
           <div class="slot-row-inputs">
             <label class="slot-stake">
@@ -55,14 +55,15 @@
                 data-cy="slip-stake-input"
                 type="number"
                 min="0"
+                [max]="maxStakeEuros"
                 step="0.5"
-                [value]="row.stake"
+                [value]="row.stake / 100"
                 (change)="updateStake(row.matchId, row.selection, $event)"
               />
             </label>
             <span class="slot-payout" data-cy="slip-row-payout">
               Potential payout
-              <strong>{{ row.potentialPayout | currency: 'EUR' : 'symbol' : '1.2' }}</strong>
+              <strong>{{ row.potentialPayout / 100 | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
             </span>
           </div>
         </li>
@@ -73,11 +74,11 @@
       <div class="slot-totals">
         <div class="slot-total-row">
           <span>Total stake</span>
-          <span data-cy="slip-total-stake">{{ totalStake() | currency: 'EUR' : 'symbol' : '1.2' }}</span>
+          <span data-cy="slip-total-stake">{{ totalStake() / 100 | currency: 'EUR' : 'symbol' : '1.2-2' }}</span>
         </div>
         <div class="slot-total-row slot-total-payout">
           <span>Potential payout</span>
-          <span data-cy="slip-total-payout">{{ totalPayout() | currency: 'EUR' : 'symbol' : '1.2' }}</span>
+          <span data-cy="slip-total-payout">{{ totalPayout() / 100 | currency: 'EUR' : 'symbol' : '1.2-2' }}</span>
         </div>
       </div>
       <button class="slot-place" data-cy="slip-place" type="button" (click)="placeBet()">Place Bet</button>

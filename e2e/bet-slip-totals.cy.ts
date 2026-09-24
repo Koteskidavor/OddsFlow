@@ -6,7 +6,7 @@ describe('Bet slip totals stress', () => {
     cy.get('[data-cy="match-card"]').first().should('be.visible');
   });
 
-  it('keeps payout math exact for decimal and very large stakes', () => {
+  it('keeps payout math exact for decimal stakes and caps stakes at the maximum', () => {
     cy.get('[data-cy="odds-button"]').eq(0).click();
     cy.get('[data-cy="slip-odds"]').invoke('text').then(slipRaw => {
       const odds = parseEur(slipRaw);
@@ -17,11 +17,18 @@ describe('Bet slip totals stress', () => {
       cy.get('[data-cy="slip-total-payout"]').should('have.text', formatEur(round2(odds * decimalStake)));
       cy.get('[data-cy="slip-row-payout"]').first().should('contain.text', formatEur(round2(odds * decimalStake)));
 
-      const largeStake = 999999999;
+      const largeStake = 99999.99;
       cy.get('[data-cy="slip-stake-input"]').first().clear().type(String(largeStake)).blur();
       cy.get('[data-cy="slip-total-stake"]').should('have.text', formatEur(largeStake));
       cy.get('[data-cy="slip-total-payout"]').should('have.text', formatEur(round2(odds * largeStake)));
       cy.get('[data-cy="slip-row-payout"]').first().should('contain.text', formatEur(round2(odds * largeStake)));
+
+      // Anything above the €100,000 ceiling is clamped, never propagated raw.
+      cy.get('[data-cy="slip-stake-input"]').first().clear().type('999999999').blur();
+      cy.get('[data-cy="slip-stake-input"]').first().should('have.value', '100000');
+      cy.get('[data-cy="slip-total-stake"]').should('have.text', formatEur(100000));
+      cy.get('[data-cy="slip-total-payout"]').should('have.text', formatEur(round2(odds * 100000)));
+      cy.get('[data-cy="slip-row-payout"]').first().should('contain.text', formatEur(round2(odds * 100000)));
     });
   });
 

@@ -35,7 +35,7 @@ describe('Loading state and live odds integration', () => {
         // Add the snapshot (m1, selection '1', odds 2.1, default stake 10).
         cy.get('[data-cy="match-card"]').first().find('[data-cy="odds-button"]').eq(0).click();
         cy.get('[data-cy="slip-count"]').should('have.text', '1');
-        cy.get('[data-cy="slip-odds"]').should('have.text', '€2.10');
+        cy.get('[data-cy="slip-odds"]').should('have.text', '2.10');
         cy.get('[data-cy="slip-total-stake"]').should('have.text', '€10.00');
         cy.get('[data-cy="slip-total-payout"]').should('have.text', '€21.00');
 
@@ -44,7 +44,7 @@ describe('Loading state and live odds integration', () => {
           .should('have.text', '1.5');
 
         // The slip snapshot and totals must be untouched by the live update.
-        cy.get('[data-cy="slip-odds"]').should('have.text', '€2.10');
+        cy.get('[data-cy="slip-odds"]').should('have.text', '2.10');
         cy.get('[data-cy="slip-total-stake"]').should('have.text', '€10.00');
         cy.get('[data-cy="slip-total-payout"]').should('have.text', '€21.00');
       });

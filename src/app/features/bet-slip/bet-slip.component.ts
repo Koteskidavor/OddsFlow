@@ -1,11 +1,11 @@
 import { Component, computed, inject, output } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
-import { BetSlipStore, slipKey } from '../../core/services/bet-slip.store';
+import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { BetSlipStore, slipKey, MAX_STAKE_CENTS, toCents } from '../../core/services/bet-slip.store';
 import { MatchesStore } from '../../core/services/matches.store';
 
 @Component({
   selector: 'app-bet-slip',
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, DecimalPipe],
   templateUrl: './bet-slip.component.html',
   styleUrl: './bet-slip.component.scss'
 })
@@ -19,6 +19,8 @@ export class BetSlipComponent {
 
   protected readonly totalStake = this.betSlipStore.totalStake;
   protected readonly totalPayout = this.betSlipStore.totalPayout;
+
+  protected readonly maxStakeEuros = MAX_STAKE_CENTS / 100;
 
   protected readonly rows = computed(() => {
     const matches = this.matchesStore.matches();
@@ -43,8 +45,11 @@ export class BetSlipComponent {
 
   protected updateStake(matchId: string, selection: string, event: Event) {
     const input = event.target as HTMLInputElement;
-    const stake = Math.max(0, Number(input.value) || 0);
-    this.betSlipStore.updateStake(matchId, selection, stake);
+    const cents = toCents(Number(input.value));
+    const applied = this.betSlipStore.updateStake(matchId, selection, cents);
+    if (applied !== null) {
+      input.value = String(applied / 100);
+    }
   }
 
   protected placeBet() {

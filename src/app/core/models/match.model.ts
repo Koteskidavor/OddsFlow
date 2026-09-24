@@ -14,6 +14,7 @@ export interface Match {
     sets: { home: number; away: number }[];
     currentSet: { home: string; away: string };
     setsWon: { home: number; away: number };
+    games: { home: number; away: number };
   };
   odds: Record<OddsSelection, number>;
 }
