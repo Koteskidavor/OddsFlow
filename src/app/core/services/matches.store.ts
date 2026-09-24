@@ -1,9 +1,10 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
-import { Match, SportType, MatchStatus } from '../models/match.model';
+import { Injectable, signal, computed, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Match, SportType, OddsSelection } from '../models/match.model';
 import { LiveEvent } from '../models/live-event.model';
 import { TrendInfo } from '../models/odds-trend.model';
 import { SEED_MATCHES } from '../data/seed-matches';
-import { LiveEventService } from './live-event.service';
+import { MockLiveEventService } from './mock-live-event.service';
 
 export interface MatchTrend extends Match {
   trends: Record<string, TrendInfo>;
@@ -13,8 +14,10 @@ export interface MatchTrend extends Match {
   providedIn: 'root'
 })
 export class MatchesStore {
-  private readonly liveEventService = inject(LiveEventService);
+  private readonly liveEventService = inject(MockLiveEventService);
+  private readonly destroyRef = inject(DestroyRef);
 
+  /** Simulated fetch latency so the UI can exercise its loading state. */
   public readonly loading = signal(true);
 
   private readonly _matchesMap = signal<Record<string, MatchTrend>>(
@@ -23,6 +26,9 @@ export class MatchesStore {
       [m.id]: { ...m, trends: {} } 
     }), {} as Record<string, MatchTrend>)
   );
+
+  /** Last applied odds per `matchId::selection`, used to derive trends. */
+  private readonly previousOdds = new Map<string, number>();
 
   public readonly matches = computed(() => Object.values(this._matchesMap()));
 
@@ -35,11 +41,20 @@ export class MatchesStore {
   }
 
   constructor() {
-    this.liveEventService.events$.subscribe(event => this.updateFromEvent(event));
+    this.liveEventService.events$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(event => this.updateFromEvent(event));
 
-    setTimeout(() => {
+    this.beginLoadingDelay();
+  }
+
+  private beginLoadingDelay() {
+    const delay = this.resolveLoadDelay();
+    if (delay === 0) {
       this.loading.set(false);
-    }, this.resolveLoadDelay());
+      return;
+    }
+    setTimeout(() => this.loading.set(false), delay);
   }
 
   private resolveLoadDelay(): number {
@@ -56,61 +71,75 @@ export class MatchesStore {
 
       let updatedMatch: MatchTrend;
 
-switch (event.type) {
+      switch (event.type) {
         case 'ODDS_UPDATE':
           if (match.status !== 'live') return map;
           if (!(event.newOdds > 0)) return map;
-          const currentOdds = match.odds[event.selection as keyof typeof match.odds] || 0;
-          const direction = event.newOdds > currentOdds ? 'up' : event.newOdds < currentOdds ? 'down' : 'neutral';
-          updatedMatch = {
-            ...match,
-            odds: { ...match.odds, [event.selection]: event.newOdds },
-            trends: {
-              ...match.trends,
-              [event.selection]: { direction, timestamp: Date.now() }
-            }
-          };
+          updatedMatch = this.applyOddsUpdate(match, event.selection, event.newOdds);
           break;
 
         case 'SCORE_UPDATE':
-          if (match.status !== 'live') return map;
-          if (match.sport === 'tennis') {
-            const update = (event as any).tennisUpdate;
-            if (!update) return map;
-
-            let { home, away } = update;
-            let setsWon = { ...match.tennisScore!.setsWon };
-            let sets = [...(match.tennisScore?.sets || [])];
-            let currentSet = { home, away };
-
-            if (home === '40' && (away === '0' || away === '15' || away === '30')) {
-              setsWon.home++;
-              sets.push({ home: 6, away: 0 });
-              currentSet = { home: '0', away: '0' };
-            } else if (away === '40' && (home === '0' || home === '15' || home === '30')) {
-              setsWon.away++;
-              sets.push({ home: 0, away: 6 });
-              currentSet = { home: '0', away: '0' };
-            }
-
-            updatedMatch = {
-              ...match,
-              tennisScore: { sets, currentSet, setsWon },
-              score: `${setsWon.home}-${setsWon.away}`
-            };
-          } else {
-            updatedMatch = { ...match, score: `${event.homeScore}-${event.awayScore}` };
-          }
+          if (match.status !== 'live' || match.sport === 'tennis') return map;
+          updatedMatch = { ...match, score: `${event.homeScore}-${event.awayScore}` };
           break;
+
+        case 'TENNIS_SCORE_UPDATE':
+          if (match.status !== 'live' || match.sport !== 'tennis') return map;
+          updatedMatch = this.applyTennisUpdate(match, event.tennisUpdate);
+          break;
+
         case 'STATUS_CHANGE':
           if (match.status === 'finished' || event.newStatus === match.status) return map;
-          updatedMatch = { ...match, status: event.newStatus as MatchStatus };
+          updatedMatch = { ...match, status: event.newStatus };
           break;
+
         default:
           return map;
       }
 
       return { ...map, [event.matchId]: updatedMatch };
     });
+  }
+
+  private applyOddsUpdate(match: MatchTrend, selection: OddsSelection, newOdds: number): MatchTrend {
+    const key = `${match.id}::${selection}`;
+    const previous = this.previousOdds.get(key) ?? match.odds[selection] ?? 0;
+    const direction = newOdds > previous ? 'up' : newOdds < previous ? 'down' : 'neutral';
+    this.previousOdds.set(key, newOdds);
+
+    return {
+      ...match,
+      odds: { ...match.odds, [selection]: newOdds },
+      trends: {
+        ...match.trends,
+        [selection]: { direction, timestamp: Date.now() }
+      }
+    };
+  }
+
+  private applyTennisUpdate(
+    match: MatchTrend,
+    update: { home: string; away: string }
+  ): MatchTrend {
+    const { home, away } = update;
+    const setsWon = { ...match.tennisScore!.setsWon };
+    const sets = [...(match.tennisScore?.sets || [])];
+    let currentSet = { home, away };
+
+    if (home === '40' && (away === '0' || away === '15' || away === '30')) {
+      setsWon.home++;
+      sets.push({ home: 6, away: 0 });
+      currentSet = { home: '0', away: '0' };
+    } else if (away === '40' && (home === '0' || home === '15' || home === '30')) {
+      setsWon.away++;
+      sets.push({ home: 0, away: 6 });
+      currentSet = { home: '0', away: '0' };
+    }
+
+    return {
+      ...match,
+      tennisScore: { sets, currentSet, setsWon },
+      score: `${setsWon.home}-${setsWon.away}`
+    };
   }
 }

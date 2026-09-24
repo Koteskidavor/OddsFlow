@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <title>OddsFlow</title>
@@ -9,16 +10,18 @@
   <script>
     (function () {
       try {
-        var theme = localStorage.getItem('oddfeed-theme');
+        var theme = localStorage.getItem('oddsfeed-theme');
         if (theme !== 'light' && theme !== 'dark') {
           theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
         document.documentElement.setAttribute('data-theme', theme);
-      } catch (e) {}
+      } catch (e) { }
     })();
   </script>
 </head>
+
 <body>
   <app-root></app-root>
 </body>
+
 </html>

@@ -1,0 +1,45 @@
+<article class="match-card" data-cy="match-card" [attr.aria-label]="match().homeTeam + ' vs ' + match().awayTeam">
+  <div class="header">
+    <span class="sport">{{ match().sport }}</span>
+    @if (match().status === 'live') {
+      <span class="live-indicator">
+        <span class="pulse"></span> LIVE
+      </span>
+    }
+  </div>
+
+  <div class="teams">
+    <div class="team">
+      <span class="name">{{ match().homeTeam }}</span>
+      <span class="score">{{ homeScore() }}</span>
+    </div>
+    <div class="vs">VS</div>
+    <div class="team">
+      <span class="name">{{ match().awayTeam }}</span>
+      <span class="score">{{ awayScore() }}</span>
+    </div>
+  </div>
+
+  @if (match().sport === 'tennis' && match().tennisScore) {
+    <div class="tennis-sets">
+      <span>Sets: {{ match().tennisScore?.setsWon?.home }} - {{ match().tennisScore?.setsWon?.away }}</span>
+      <div class="set-history">
+        @for (set of sets(); track $index) {
+          <span class="set-score">{{ set.home }}-{{ set.away }}</span>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="odds-grid">
+    @for (odd of oddsList(); track odd.selection) {
+      <app-odds-button
+        [value]="odd.value"
+        [trend]="odd.trend"
+        [selection]="odd.selection"
+        [selected]="odd.selected"
+        (picked)="onPick(odd.selection)"
+      />
+    }
+  </div>
+</article>

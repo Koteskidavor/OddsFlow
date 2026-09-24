@@ -1,0 +1,66 @@
+<div class="dashboard-container">
+  <header class="tabs-header">
+    @for (sport of sports; track sport) {
+      <button
+        class="tab-btn"
+        [attr.data-cy]="'sport-tab-' + sport"
+        [class.active]="activeSport() === sport"
+        (click)="setActiveSport(sport)"
+      >
+        {{ sport | titlecase }}
+      </button>
+    }
+  </header>
+
+  <div class="layout">
+    <main class="matches-column" [attr.aria-busy]="matchesStore.loading()">
+      <div class="sr-only" role="status" aria-live="polite">
+        @if (matchesStore.loading()) {
+          <span>Loading matches...</span>
+        } @else {
+          <span>{{ filteredMatches().length }} matches loaded</span>
+        }
+      </div>
+
+      @if (matchesStore.loading()) {
+        @for (skeleton of skeletonCount; track skeleton) {
+          <app-match-card-skeleton />
+        }
+      } @else if (filteredMatches().length > 0) {
+        @for (match of filteredMatches(); track match.id) {
+          <app-match-card [match]="match" />
+        }
+      } @else {
+        <div class="empty-state">
+          <p class="empty-title">No matches available</p>
+          <p class="empty-hint">There are no {{ activeSport() | titlecase }} matches right now.</p>
+        </div>
+      }
+    </main>
+
+    <aside class="slip-column" [class.is-open]="slipOpen()">
+      <app-bet-slip (close)="slipOpen.set(false)" />
+    </aside>
+
+    @if (slipOpen()) {
+      <button class="slip-backdrop" type="button" (click)="slipOpen.set(false)" aria-label="Close bet slip"></button>
+    }
+  </div>
+
+  <button
+    class="slip-fab"
+    type="button"
+    (click)="slipOpen.set(true)"
+    [attr.aria-expanded]="slipOpen()"
+    [attr.aria-label]="'Open bet slip, ' + betSlipStore.items().length + ' selections'"
+  >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 7h16l-1.5 12a2 2 0 0 1-2 1.8h-9a2 2 0 0 1-2-1.8L4 7z"></path>
+      <path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
+    </svg>
+    <span>Bet Slip</span>
+    @if (betSlipStore.items().length > 0) {
+      <span class="slip-fab-count">{{ betSlipStore.items().length }}</span>
+    }
+  </button>
+</div>

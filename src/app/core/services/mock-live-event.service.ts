@@ -4,10 +4,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LiveEvent } from '../models/live-event.model';
 import { SEED_MATCHES } from '../data/seed-matches';
 
+/**
+ * Simulates a live data feed (odds, scores, status changes) so the app can be
+ * exercised without a backend. Pass `?sim=off` in the URL to pause the feed,
+ * which gives deterministic conditions for E2E tests.
+ */
 @Injectable({
   providedIn: 'root'
 })
-export class LiveEventService {
+export class MockLiveEventService {
   private readonly destroyRef = inject(DestroyRef);
   private readonly _events = new Subject<LiveEvent>();
   public readonly events$: Observable<LiveEvent> = this._events.asObservable();
@@ -15,7 +20,7 @@ export class LiveEventService {
   constructor() {
     const simulationPaused =
       typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).has('sim=off');
+      new URLSearchParams(window.location.search).get('sim') === 'off';
 
     if (simulationPaused) return;
 
@@ -37,12 +42,11 @@ export class LiveEventService {
       event = {
         type: 'ODDS_UPDATE',
         matchId: match.id,
-        selection: ['1', 'X', '2'][Math.floor(Math.random() * 3)],
+        selection: (['1', 'X', '2'] as const)[Math.floor(Math.random() * 3)],
         newOdds: parseFloat((Math.random() * 5 + 1).toFixed(2))
       };
     } else if (rand < 0.94) {
       if (match.sport === 'tennis') {
-        // Specialized Tennis Scoring Logic
         const tennisPoints = ['0', '15', '30', '40'];
         const current = match.tennisScore?.currentSet || { home: '0', away: '0' };
 
@@ -54,12 +58,10 @@ export class LiveEventService {
         const nextAway = !homeWinPoint ? (tennisPoints[awayIdx + 1] || '40') : current.away;
 
         event = {
-          type: 'SCORE_UPDATE',
+          type: 'TENNIS_SCORE_UPDATE',
           matchId: match.id,
-          homeScore: 0,
-          awayScore: 0
+          tennisUpdate: { home: nextHome, away: nextAway }
         };
-        (event as any).tennisUpdate = { home: nextHome, away: nextAway };
       } else {
         const currentScore = match.score?.split('-').map(Number) || [0, 0];
         const homeIncrement = Math.random() > 0.5 ? 1 : 0;
@@ -83,6 +85,4 @@ export class LiveEventService {
 
     this._events.next(event);
   }
-
 }
-

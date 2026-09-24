@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { PLATFORM_ID } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { SafeStorageService } from './safe-storage.service';
 
 export type Theme = 'light' | 'dark';
 
@@ -11,9 +11,9 @@ const STORAGE_KEY = 'oddsfeed-theme';
 })
 export class ThemeService {
   private readonly document = inject(DOCUMENT);
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly storage = inject(SafeStorageService);
 
-  private readonly _theme = signal<Theme>(this.getStoredOrPreferredTheme());
+  private readonly _theme = signal<Theme>(this.getPreferredTheme());
 
   public readonly theme = this._theme.asReadonly();
   public readonly isDark = computed(() => this._theme() === 'dark');
@@ -31,15 +31,9 @@ export class ThemeService {
     this.applyTheme(next);
   }
 
-  private getStoredOrPreferredTheme(): Theme {
-    if (!isPlatformBrowser(this.platformId)) return 'light';
-
-    try {
-      const stored = this.document.defaultView?.localStorage?.getItem(STORAGE_KEY);
-      if (stored === 'light' || stored === 'dark') return stored;
-    } catch {
-      // storage unavailable (e.g. private mode) — fall through to preference
-    }
+  private getPreferredTheme(): Theme {
+    const stored = this.storage.get(STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
 
     const prefersDark =
       this.document.defaultView?.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? false;
@@ -48,12 +42,6 @@ export class ThemeService {
 
   private applyTheme(theme: Theme): void {
     this.document.documentElement.setAttribute('data-theme', theme);
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        this.document.defaultView?.localStorage?.setItem(STORAGE_KEY, theme);
-      } catch {
-        // ignore storage write failures
-      }
-    }
+    this.storage.set(STORAGE_KEY, theme);
   }
 }

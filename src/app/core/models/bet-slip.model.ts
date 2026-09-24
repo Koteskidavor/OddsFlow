@@ -1,6 +1,8 @@
+import { OddsSelection } from './match.model';
+
 export interface BetSlipItem {
   matchId: string;
-  selection: string;
+  selection: OddsSelection;
   odds: number;
   stake: number;
   potentialPayout: number;

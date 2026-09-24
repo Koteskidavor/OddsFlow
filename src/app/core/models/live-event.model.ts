@@ -1,9 +1,9 @@
-export type LiveEventType = 'ODDS_UPDATE' | 'SCORE_UPDATE' | 'STATUS_CHANGE';
+import { OddsSelection, MatchStatus } from './match.model';
 
 export interface OddsUpdateEvent {
   type: 'ODDS_UPDATE';
   matchId: string;
-  selection: string;
+  selection: OddsSelection;
   newOdds: number;
 }
 
@@ -14,11 +14,17 @@ export interface ScoreUpdateEvent {
   awayScore: number;
 }
 
+export interface TennisScoreUpdateEvent {
+  type: 'TENNIS_SCORE_UPDATE';
+  matchId: string;
+  tennisUpdate: { home: string; away: string };
+}
+
 export interface StatusChangeEvent {
   type: 'STATUS_CHANGE';
   matchId: string;
-  oldStatus: string;
-  newStatus: string;
+  oldStatus: MatchStatus;
+  newStatus: MatchStatus;
 }
 
-export type LiveEvent = OddsUpdateEvent | ScoreUpdateEvent | StatusChangeEvent;
+export type LiveEvent = OddsUpdateEvent | ScoreUpdateEvent | TennisScoreUpdateEvent | StatusChangeEvent;

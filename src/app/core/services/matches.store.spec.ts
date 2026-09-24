@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 import { MatchesStore, MatchTrend } from './matches.store';
-import { LiveEventService } from './live-event.service';
+import { MockLiveEventService } from './mock-live-event.service';
 import { LiveEvent } from '../models/live-event.model';
 import { TrendInfo } from '../models/odds-trend.model';
 
@@ -21,7 +21,7 @@ describe('MatchesStore', () => {
   beforeEach(() => {
     events = new FakeLiveEventService();
     TestBed.configureTestingModule({
-      providers: [{ provide: LiveEventService, useValue: events }]
+      providers: [{ provide: MockLiveEventService, useValue: events }]
     });
     store = TestBed.inject(MatchesStore);
   });
@@ -55,8 +55,14 @@ describe('MatchesStore', () => {
       expect(match('m2')!.status).toBe('scheduled');
 
       events.emit({ type: 'ODDS_UPDATE', matchId: 'm2', selection: '1', newOdds: 9.9 });
+      events.emit({ type: 'ODDS_UPDATE', matchId: 'm4', selection: '1', newOdds: 9.9 });
+      events.emit({ type: 'ODDS_UPDATE', matchId: 'm6', selection: '2', newOdds: 9.9 });
+      events.emit({ type: 'ODDS_UPDATE', matchId: 'm8', selection: '2', newOdds: 9.9 });
 
       expect(match('m2')!.odds['1']).toBe(1.7);
+      expect(match('m4')!.odds['1']).toBe(2.2);
+      expect(match('m6')!.odds['2']).toBe(2.8);
+      expect(match('m8')!.odds['2']).toBe(2.2);
       expect(match('m2')!.trends['1']).toBeUndefined();
     });
 
@@ -147,21 +153,36 @@ describe('MatchesStore', () => {
       expect(match('m5')!.score).toBe('2-1');
     });
 
-    it('applies tennis updates only to the targeted tennis match', () => {
-      const tennisUpdate = {
-        type: 'SCORE_UPDATE',
-        matchId: 'm5',
-        homeScore: 0,
-        awayScore: 0,
-        tennisUpdate: { home: '30', away: '30' }
-      } as LiveEvent;
+    it('ignores plain SCORE_UPDATE for tennis matches', () => {
+      events.emit({ type: 'SCORE_UPDATE', matchId: 'm5', homeScore: 9, awayScore: 9 });
 
-      events.emit(tennisUpdate);
+      expect(match('m5')!.tennisScore?.currentSet).toEqual({ home: '30', away: '15' });
+      expect(match('m5')!.score).toBe('2-1');
+    });
+  });
+
+  describe('TENNIS_SCORE_UPDATE', () => {
+    it('applies tennis updates only to the targeted tennis match', () => {
+      events.emit({
+        type: 'TENNIS_SCORE_UPDATE',
+        matchId: 'm5',
+        tennisUpdate: { home: '30', away: '30' }
+      });
 
       expect(match('m5')!.tennisScore?.currentSet).toEqual({ home: '30', away: '30' });
       expect(match('m5')!.tennisScore?.setsWon).toEqual({ home: 1, away: 0 });
       expect(match('m1')!.score).toBe('2-1');
       expect(match('m3')!.score).toBe('88-92');
+    });
+
+    it('ignores tennis updates for non-tennis matches', () => {
+      events.emit({
+        type: 'TENNIS_SCORE_UPDATE',
+        matchId: 'm1',
+        tennisUpdate: { home: '40', away: '0' }
+      });
+
+      expect(match('m1')!.score).toBe('2-1');
     });
   });
 });

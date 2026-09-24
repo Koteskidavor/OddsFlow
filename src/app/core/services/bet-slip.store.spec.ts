@@ -1,8 +1,21 @@
 import { TestBed } from '@angular/core/testing';
+import { Subject } from 'rxjs';
 import { BetSlipStore } from './bet-slip.store';
 import { BetSlipItem } from '../models/bet-slip.model';
+import { OddsSelection } from '../models/match.model';
+import { MockLiveEventService } from './mock-live-event.service';
+import { LiveEvent } from '../models/live-event.model';
 
-function item(matchId: string, selection: string, odds: number, stake: number): BetSlipItem {
+class FakeLiveEventService {
+  readonly subject = new Subject<LiveEvent>();
+  readonly events$ = this.subject.asObservable();
+
+  emit(event: LiveEvent) {
+    this.subject.next(event);
+  }
+}
+
+function item(matchId: string, selection: OddsSelection, odds: number, stake: number): BetSlipItem {
   return {
     matchId,
     selection,
@@ -14,9 +27,13 @@ function item(matchId: string, selection: string, odds: number, stake: number): 
 
 describe('BetSlipStore', () => {
   let store: BetSlipStore;
+  let events: FakeLiveEventService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    events = new FakeLiveEventService();
+    TestBed.configureTestingModule({
+      providers: [{ provide: MockLiveEventService, useValue: events }]
+    });
     store = TestBed.inject(BetSlipStore);
     store.clear();
   });
@@ -102,13 +119,15 @@ describe('BetSlipStore', () => {
       expect(store.items()[0].potentialPayout).toBe(0);
     });
 
-    it('accepts a negative stake without throwing', () => {
+    it('clamps a negative stake to zero on add', () => {
       expect(() => store.addSelection(item('m1', '1', 2.0, -10))).not.toThrow();
       expect(store.items().length).toBe(1);
-      expect(store.totalStake()).toBe(-10);
+      expect(store.totalStake()).toBe(0);
+      expect(store.items()[0].stake).toBe(0);
+      expect(store.items()[0].potentialPayout).toBe(0);
     });
 
-    it('updates stake to zero or negative values without throwing', () => {
+    it('clamps negative stake updates to zero', () => {
       store.addSelection(item('m1', '1', 2.0, 10));
 
       expect(() => store.updateStake('m1', '1', 0)).not.toThrow();
@@ -116,7 +135,49 @@ describe('BetSlipStore', () => {
       expect(store.items()[0].potentialPayout).toBe(0);
 
       expect(() => store.updateStake('m1', '1', -5)).not.toThrow();
-      expect(store.items()[0].stake).toBe(-5);
+      expect(store.items()[0].stake).toBe(0);
+      expect(store.items()[0].potentialPayout).toBe(0);
+      expect(store.totalPayout()).toBe(0);
+    });
+  });
+
+  describe('evicting non-active matches', () => {
+    it('removes selections when their finished match disappears from the store', () => {
+      store.addSelection(item('m1', '1', 2.0, 10));
+      store.addSelection(item('m3', 'home', 1.9, 5));
+      store.addSelection(item('m5', '1', 1.8, 10));
+
+      events.emit({
+        type: 'STATUS_CHANGE',
+        matchId: 'm3',
+        oldStatus: 'live',
+        newStatus: 'finished'
+      });
+      TestBed.flushEffects();
+
+      expect(store.hasSelection('m3', 'home')).toBe(false);
+      expect(store.hasSelection('m1', '1')).toBe(true);
+      expect(store.hasSelection('m5', '1')).toBe(true);
+      expect(store.totalStake()).toBe(20);
+    });
+
+    it('keeps selections for matches that remain live or scheduled', () => {
+      store.addSelection(item('m1', '1', 2.0, 10));
+      store.addSelection(item('m2', 'X', 3.8, 10));
+      store.addSelection(item('m5', '1', 1.8, 10));
+
+      events.emit({
+        type: 'STATUS_CHANGE',
+        matchId: 'm5',
+        oldStatus: 'live',
+        newStatus: 'cancelled'
+      });
+      TestBed.flushEffects();
+
+      expect(store.hasSelection('m5', '1')).toBe(false);
+      expect(store.hasSelection('m1', '1')).toBe(true);
+      expect(store.hasSelection('m2', 'X')).toBe(true);
+      expect(store.totalStake()).toBe(20);
     });
   });
 

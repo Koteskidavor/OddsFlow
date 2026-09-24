@@ -1,5 +1,5 @@
 export function visitApp(query: string = '?sim=off'): void {
-  // `sim=off` pauses the real-time odds/score simulation (LiveEventService)
+  // `sim=off` pauses the real-time odds/score simulation (MockLiveEventService)
   // so tests are deterministic and free of data-driven flakiness.
   // `loadMs` extends the skeleton/loading phase for loading-state assertions.
   cy.visit(`/${query}`);

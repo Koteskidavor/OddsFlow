@@ -1,0 +1,10 @@
+<button type="button" class="odds-btn" data-cy="odds-button" [class.is-selected]="selected()"
+  [attr.aria-pressed]="selected()" [attr.aria-label]="'Select ' + selection() + ' at ' + value()"
+  (click)="picked.emit(selection())">
+  @for (flash of [flashState()]; track flash.key) {
+  <span class="content" [class.flash-up]="flash.direction === 'up' && flash.key > 0"
+    [class.flash-down]="flash.direction === 'down' && flash.key > 0">
+    <span class="value">{{ value() }}</span>
+  </span>
+  }
+</button>
