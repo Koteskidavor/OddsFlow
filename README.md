@@ -1,6 +1,6 @@
 # OddsFlow
 
-OddsFlow is an Angular 21 odds dashboard built around mock live-sports data, designed primarily to demonstrate production-style architecture and deterministic testing. It stimulates moving odds, scores, and match statuses, provides a functional slip with exact monetary calculations, and is covered by a two-layer test suite of ~1,200 lines of Jasmine/Karma unit tests and 8 Cypress E2E suites.
+OddsFlow is an Angular 21 odds dashboard built around mock live-sports data, designed primarily to demonstrate production-style architecture and deterministic testing. It simulates moving odds, scores, and match statuses, provides a functional slip with exact monetary calculations, and is covered by a two-layer test suite of ~1,200 lines of Jasmine/Karma unit tests and 8 Cypress E2E suites.
 
 ---
 
